@@ -1,4 +1,4 @@
-# xt_imager
+# xt-imager
 
 Flash big binary files through the u-boot and TFTP server to the eMMC on the R-CAR board.
 
@@ -6,7 +6,7 @@ Based on https://github.com/xen-troops/rcar_flash.
 
 ### Usage:
 ```
-[sudo] xt_imager.py [-h] [-s SERIAL] [-b BAUD] [-t [TFTP]] [--serverip SERVERIP] [--ipaddr IPADDR] [-v] image
+[sudo] xt-imager.py [-h] [-s SERIAL] [-b BAUD] [-t [TFTP]] [--serverip SERVERIP] [--ipaddr IPADDR] [-v] image
 ```
 
 ### Command line options:
@@ -69,13 +69,13 @@ device 1 partition 0, starting from address 0.
 Flash `full.img` using already running TFTP server with directory `/srv/tftp`
 used as root of the TFTP server.
 ```
-./xt_imager.py -t /srv/tftp ./full.img
+./xt-imager.py -t /srv/tftp ./full.img
 ```
 
 Flash `full.img` using own TFTP server. `sudo` is required to open port 69
 on local host.
 ```
-sudo ./xt_imager.py -t -- ./full.img
+sudo ./xt-imager.py -t -- ./full.img
 ```
 
 Flash `full.img` using own TFTP server and work inside `10.10.1.*` network.
@@ -83,5 +83,5 @@ Pay attention that `--` is used to specify that `-t` has no parameters, and
 `./full.img` is the path to the image, not to the TFTP directory.
  `sudo` is required to open port 69 on local host.
 ```
-sudo ./xt_imager.py --serverip 10.10.1.15 --ipaddr 10.10.1.10 -t -- ./full.img
+sudo ./xt-imager.py --serverip 10.10.1.15 --ipaddr 10.10.1.10 -t -- ./full.img
 ```
