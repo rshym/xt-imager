@@ -55,7 +55,7 @@ option results in thousands of the lines of the text.
 ```
 image
 ```
-Path to the image file. Raw (.img) or .xz-packed files are acceptable.
+Path to the image (`.img`)file.
 This file will be split into chunks (`chunk.bin`),
 that can be transmitted to the board by TFTP and flashed into eMMC
 device 1 partition 0, starting from address 0.
