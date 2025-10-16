@@ -97,11 +97,7 @@ def do_flash_image(args, tftp_root):
     chunk_filename = "chunk.bin"
     chunk_size_in_bytes = 20*1024*1024
 
-    if str(args.image).endswith(".xz"):
-        f_img = lzma.open(args.image)
-        image_size = 0
-    else:
-        f_img = open(args.image, "rb")
+    f_img = open(args.image, "rb")
 
     bytes_sent = 0
     block_start = base_addr // mmc_block_size
