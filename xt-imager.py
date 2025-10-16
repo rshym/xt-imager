@@ -41,11 +41,9 @@ def main():
     parser.add_argument(
         '-t',
         '--tftp',
-        nargs='?',
-        type=str,
-        default=None,
-        const="AUTO",
-        help="Use external TFTP server or start our own")
+        type=pathlib.Path,
+        default="/srv/tftp",
+        help="Path to the TFTP directory")
 
     parser.add_argument(
         '--serverip',
@@ -63,46 +61,12 @@ def main():
 
     args = parser.parse_args()
 
-    tftp_root = os.getcwd()
+    if not os.path.isdir(args.tftp):
+        raise Exception("-t parameter is not a directory")
 
-    if args.tftp == "AUTO":
-        log.info(f"Starting our TFTP server...")
+    log.info(f"Use {args.tftp} as a TFTP root.")
 
-        tftpsrv = PYTFTPServer(tftp_root)
-        TFTP_srv_thread = threading.Thread(name="TFTP Server thread", target=tftpsrv.start_tftp_server)
-        TFTP_srv_thread.start()
-
-    elif os.path.isdir(args.tftp):
-        # use external path
-        tftp_root = args.tftp
-        log.info(f"Use external TFTP root {tftp_root}")
-    else:
-        raise Exception("-t parameter is not external TFTP root.")
-
-    do_flash_image(args, tftp_root)
-
-    if args.tftp == "AUTO":
-        log.info("Stopping our TFTP server")
-        tftpsrv.stop_tftp_server()
-        TFTP_srv_thread.join()
-
-
-class PYTFTPServer(object):
-    def __init__(self, folder):
-        try:
-            import tftpy
-            self.tftp_server = tftpy.TftpServer(folder)
-        except ImportError:
-            print("Can't find tftpy Python module. Please install it.")
-            exit(1)
-
-    def start_tftp_server(self):
-        # listen to all interfaces and port 69
-        self.tftp_server.listen()
-
-    def stop_tftp_server(self):
-        self.tftp_server.stop()
-
+    do_flash_image(args, args.tftp)
 
 def do_flash_image(args, tftp_root):
 
