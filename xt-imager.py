@@ -6,7 +6,7 @@ import logging
 import argparse
 from typing import List
 from string import printable
-import lzma
+import gzip
 import serial
 
 logging.basicConfig(level=logging.INFO, format="[%(levelname)s] %(message)s")
@@ -44,6 +44,24 @@ def main():
         type=pathlib.Path,
         default="/srv/tftp",
         help="Path to the TFTP directory")
+
+    parser.add_argument(
+        '-l',
+        '--loadaddr',
+        default='0x58000000',
+        help='loadaddr for u-boot, 0x.. format')
+
+    parser.add_argument(
+        '-m',
+        '--mmc',
+        default=0,
+        help='MMC device in u-boot')
+
+    parser.add_argument(
+        '-b',
+        '--buffersize',
+        default=512*1024*1024,
+        help='Buffer size, 512-bytes aligned')
 
     parser.add_argument(
         '--serverip',
@@ -88,20 +106,12 @@ def do_flash_image(args, tftp_root):
 
     image_size = os.path.getsize(args.image)
 
-    ###########
-    base_addr = 0x0
-    mmc_device = 1
-    mmc_part = 0
-    mmc_block_size = 512
-    ###########
-
-    chunk_filename = "chunk.bin"
-    chunk_size_in_bytes = 20*1024*1024
+    chunk_filename = "chunk.bin.gz"
+    chunk_size_in_bytes = args.buffersize
 
     f_img = open(args.image, "rb")
 
     bytes_sent = 0
-    block_start = base_addr // mmc_block_size
     out_fullname = os.path.join(tftp_root, chunk_filename)
 
     if args.serverip:
@@ -112,8 +122,7 @@ def do_flash_image(args, tftp_root):
         conn_send(conn, f"env set ipaddr {args.ipaddr}\r")
         conn_wait_for_any(conn, [uboot_prompt], args.verbose)
 
-    # switch to the required MMC device/partition
-    conn_send(conn, f"mmc dev {mmc_device} {mmc_part}\r")
+    conn_send(conn, f"env set loadaddr {args.loadaddr}\r")
     conn_wait_for_any(conn, [uboot_prompt], args.verbose)
 
     try:
@@ -129,30 +138,18 @@ def do_flash_image(args, tftp_root):
 
             # create chunk
             f_out = open(out_fullname, "wb")
-            data_packed = lzma.compress(data, format=lzma.FORMAT_ALONE, preset = 1)
+            data_packed = gzip.compress(data, compresslevel=1)
             f_out.write(data_packed)
             f_out.close()
-            conn_send(conn, f"tftp 0x58000000 {chunk_filename}\r")
+            conn_send(conn, f"tftp ${{loadaddr}} {chunk_filename}\r")
             # check that all bytes are transmitted
             conn_wait_for_any(conn, [f"Bytes transferred = {len(data_packed)}"], args.verbose)
             conn_wait_for_any(conn, [uboot_prompt], args.verbose)
-            # unpack on u-boot side
-            conn_send(conn, "lzmadec 0x58000000 0x48000000\r")
-            # check that all bytes are uncompressed
-            conn_wait_for_any(conn, [f"Uncompressed size: {len(data)}"], args.verbose)
-            conn_wait_for_any(conn, [uboot_prompt], args.verbose)
-
-            chunk_size_in_blocks = len(data) // mmc_block_size
-            if len(data) % mmc_block_size:
-                chunk_size_in_blocks += 1
-
-            conn_send(conn, f"mmc write 0x48000000 0x{block_start:X} 0x{chunk_size_in_blocks:X}\r")
-            # check that all blocks are written properly
-            conn_wait_for_any(conn, [f"{chunk_size_in_blocks} blocks written: OK"], args.verbose)
+            # write to eMMC
+            conn_send(conn, f"gzwrite mmc {args.mmc} ${{loadaddr}} ${{filesize}} 400000 {bytes_sent:X}\r")
             conn_wait_for_any(conn, [uboot_prompt], args.verbose)
 
             bytes_sent += len(data)
-            block_start += chunk_size_in_blocks
 
             if args.verbose:
                 # in the verbose mode we need to print progress on the new line
