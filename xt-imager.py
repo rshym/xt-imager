@@ -72,7 +72,7 @@ def do_flash_image(args, tftp_root):
 
     log.info(args.image)
 
-    conn = open_connection(args)
+    conn = serial.Serial(port=args.serial, baudrate=args.baud, timeout=20)
 
     uboot_prompt = "=>"
     # Send 'CR', and check for one of the possible options:
@@ -177,14 +177,6 @@ def do_flash_image(args, tftp_root):
         # move to the next line, below the progress
         print('')
     log.info("Image was flashed successfully.")
-
-
-def open_connection(args):
-    dev_name = args.serial
-    baud = args.baud
-
-    log.info(f"Using serial port {dev_name} with baudrate {baud}")
-    return serial.Serial(port=dev_name, baudrate=baud, timeout=20)
 
 
 def conn_wait_for_any(conn, expect: List[str], verbose: bool):
