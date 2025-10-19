@@ -2,20 +2,20 @@
 
 import os
 import pathlib
-import serial
 import logging
 import argparse
-import traceback
 from typing import List
 from string import printable
-import threading
 import lzma
+import serial
 
 logging.basicConfig(level=logging.INFO, format="[%(levelname)s] %(message)s")
 log = logging.getLogger(__name__)
 
 
 def main():
+    """Main function"""
+
     parser = argparse.ArgumentParser(
         description='Flash image files through u-boot and tftp',
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -62,13 +62,14 @@ def main():
     args = parser.parse_args()
 
     if not os.path.isdir(args.tftp):
-        raise Exception("-t parameter is not a directory")
+        raise NotADirectoryError("-t parameter is not a directory")
 
-    log.info(f"Use {args.tftp} as a TFTP root.")
+    log.info("Use %s as a TFTP root.", {args.tftp})
 
     do_flash_image(args, args.tftp)
 
 def do_flash_image(args, tftp_root):
+    """Flash image to the eMMC"""
 
     log.info(args.image)
 
@@ -163,7 +164,8 @@ def do_flash_image(args, tftp_root):
                 end_of_string = '\r'
 
             if image_size:
-                print(f"Progress: {bytes_sent:_}/{image_size:_} ({bytes_sent * 100 // image_size}%)", end=end_of_string)
+                print(f"Progress: {bytes_sent:_}/{image_size:_} ({bytes_sent*100 // image_size}%)",
+                    end=end_of_string)
             else:
                 print(f"Progress: {bytes_sent:_}", end=end_of_string)
     finally:
@@ -180,6 +182,8 @@ def do_flash_image(args, tftp_root):
 
 
 def conn_wait_for_any(conn, expect: List[str], verbose: bool):
+    """ Wait for any of the expected response from u-boot"""
+
     rcv_str = ""
     # stay in the read loop until any of expected string is received
     # in other words - all expected substrings are not in received buffer
@@ -194,12 +198,9 @@ def conn_wait_for_any(conn, expect: List[str], verbose: bool):
 
 
 def conn_send(conn, data):
+    """ Send the string to the u-boot"""
     conn.write(data.encode("ascii"))
 
 
 if __name__ == "__main__":
-    try:
-        main()
-    except Exception as e:
-        log.fatal(e)
-        log.fatal(traceback.format_exc())
+    main()
