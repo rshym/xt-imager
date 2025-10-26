@@ -103,6 +103,7 @@ def do_flash_image(args, tftp_root):
     # In case we got "Hit any key", let's stop the boot
     conn_send(conn, "\r")
     conn_wait_for_any(conn, [uboot_prompt], args.verbose)
+    log.info('Connected to u-boot')
 
     image_size = os.path.getsize(args.image)
 
