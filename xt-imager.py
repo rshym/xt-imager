@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import os
+import sys
 import pathlib
 import logging
 import argparse
@@ -23,8 +24,9 @@ def main():
 
     parser.add_argument(
         'image',
+        nargs='?',
         type=pathlib.Path,
-        help='Name of the image file to flash')
+        help='Name of the image file to flash (skip for stdin)')
 
     parser.add_argument(
         '-s',
@@ -86,7 +88,7 @@ def main():
 def do_flash_image(args, tftp_root):
     """Flash image to the eMMC"""
 
-    log.info(args.image)
+    log.info(args.image if args.image else "stdin")
 
     conn = serial.Serial(port=args.serial, baudrate=args.baud, timeout=20)
 
@@ -102,12 +104,16 @@ def do_flash_image(args, tftp_root):
     conn_wait_for_any(conn, [uboot_prompt], args.verbose)
     log.info('Connected to u-boot')
 
-    image_size = os.path.getsize(args.image)
+    # Open input file or stdin
+    if args.image and str(args.image) != "-":
+        f_img = open(args.image, "rb")
+        image_size = os.path.getsize(args.image)
+    else:
+        f_img = sys.stdin.buffer
+        image_size = None
 
     chunk_filename = "chunk.bin.gz"
     chunk_size_in_bytes = args.buffersize
-
-    f_img = open(args.image, "rb")
 
     bytes_sent = 0
     out_fullname = os.path.join(tftp_root, chunk_filename)
@@ -167,7 +173,8 @@ def do_flash_image(args, tftp_root):
         # remove chunk from tftp root
         os.remove(out_fullname)
 
-    f_img.close()
+    if f_img != sys.stdin.buffer:
+        f_img.close()
     conn.close()
 
     if not args.verbose:

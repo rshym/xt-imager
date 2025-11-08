@@ -76,7 +76,8 @@ Default vaue is 512 MiB (512*1024*1024).
 ```
 image
 ```
-Path to the image (`.img`)file.
+Path to the image (`.img`)file. If not provided, then script will
+read data from the `stdin`.
 This file will be split into chunks (`chunk.bin`),
 that can be transmitted to the board by TFTP and flashed into eMMC
 device `--mmcdev`, starting from address 0.
@@ -87,4 +88,9 @@ Flash `full.img` using `/srv/tftp` as TFTP root, `/dev/ttyUSB0` as
 serial console and set provided IP inside u-boot environment.
 ```
 ./xt-imager.py --serverip 10.10.1.15 --ipaddr 10.10.1.10 ./full.img
+```
+
+The same as above but reading from `full.img.gz`.
+```
+zcat full.img.gz > ./xt-imager.py --serverip 10.10.1.15 --ipaddr 10.10.1.10
 ```
