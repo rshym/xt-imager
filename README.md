@@ -53,12 +53,33 @@ Print the output from the serial console. Pay attention, that this
 option results in thousands of the lines of the text.
 
 ```
+--loadaddr
+```
+String used as load addr for `tftp` command on u-boot side.
+Represents variable with the same name in the u-boot env.
+Will be used as `env set loadaddr <loadaddr>`.
+Default value is `0x58000000`.
+
+```
+--mmcdev
+```
+String used as mmc device for `gzwrite` command on u-boot side.
+Will be used like `gzwrite mmc <mmcdev> ${loadaddr} ${filesize} 400000 0`.
+Equals to `0` if not set.
+
+```
+--buffersize
+```
+Size of bytes read from the input raw file as one chunk.
+Default vaue is 512 MiB (512*1024*1024).
+
+```
 image
 ```
 Path to the image (`.img`)file.
 This file will be split into chunks (`chunk.bin`),
 that can be transmitted to the board by TFTP and flashed into eMMC
-device 1 partition 0, starting from address 0.
+device `--mmcdev`, starting from address 0.
 
 ### Examples of usage
 
