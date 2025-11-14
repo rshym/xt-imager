@@ -46,19 +46,16 @@ def main():
         help="Path to the TFTP directory")
 
     parser.add_argument(
-        '-l',
         '--loadaddr',
         default='0x58000000',
         help='loadaddr for u-boot, 0x.. format')
 
     parser.add_argument(
-        '-m',
-        '--mmc',
+        '--mmcdev',
         default=0,
         help='MMC device in u-boot')
 
     parser.add_argument(
-        '-b',
         '--buffersize',
         default=512*1024*1024,
         help='Buffer size, 512-bytes aligned')
