@@ -46,19 +46,16 @@ def main():
         help="Path to the TFTP directory")
 
     parser.add_argument(
-        '-l',
         '--loadaddr',
         default='0x58000000',
         help='loadaddr for u-boot, 0x.. format')
 
     parser.add_argument(
-        '-m',
-        '--mmc',
+        '--mmcdev',
         default=0,
         help='MMC device in u-boot')
 
     parser.add_argument(
-        '-b',
         '--buffersize',
         default=512*1024*1024,
         help='Buffer size, 512-bytes aligned')
@@ -147,7 +144,7 @@ def do_flash_image(args, tftp_root):
             conn_wait_for_any(conn, [f"Bytes transferred = {len(data_packed)}"], args.verbose)
             conn_wait_for_any(conn, [uboot_prompt], args.verbose)
             # write to eMMC
-            conn_send(conn, f"gzwrite mmc {args.mmc} ${{loadaddr}} ${{filesize}} 400000 {bytes_sent:X}\r")
+            conn_send(conn, f"gzwrite mmc {args.mmcdev} ${{loadaddr}} ${{filesize}} 400000 {bytes_sent:X}\r")
             conn_wait_for_any(conn, [uboot_prompt], args.verbose)
 
             bytes_sent += len(data)
