@@ -92,5 +92,5 @@ serial console and set provided IP inside u-boot environment.
 
 The same as above but reading from `full.img.gz`.
 ```
-zcat full.img.gz > ./xt-imager.py --serverip 10.10.1.15 --ipaddr 10.10.1.10
+zcat full.img.gz | ./xt-imager.py --serverip 10.10.1.15 --ipaddr 10.10.1.10
 ```
