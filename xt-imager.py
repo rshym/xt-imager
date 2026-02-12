@@ -81,7 +81,7 @@ def main():
     if not os.path.isdir(args.tftp):
         raise NotADirectoryError("-t parameter is not a directory")
 
-    log.info("Use %s as a TFTP root.", {args.tftp})
+    log.info("Use %s as a TFTP root.", args.tftp)
 
     do_flash_image(args, args.tftp)
 
