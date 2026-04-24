@@ -3,16 +3,12 @@
 import os
 import sys
 import pathlib
-import logging
 import argparse
 from typing import List
 from string import printable
 import gzip
 import zlib
 import serial
-
-logging.basicConfig(level=logging.INFO, format="[%(levelname)s] %(message)s")
-log = logging.getLogger(__name__)
 
 
 def main():
@@ -71,22 +67,17 @@ def main():
         '--ipaddr',
         help='IP of the board that will be used TFTP transfer.')
 
-    parser.add_argument(
-        '-v',
-        '--verbose',
-        action="store_true",
-        help='Print the output from the serial console')
-
     args = parser.parse_args()
 
     if not os.path.isdir(args.tftp):
         raise NotADirectoryError("-t parameter is not a directory")
 
-    log.info("Use %s as a TFTP root.", args.tftp)
+    print(f"[Use {args.tftp} as a TFTP root]")
 
-    log.info("Reading data from " + (str(args.image) if args.image else "STDIN"))
+    print(f"[Reading data from {args.image if args.image else 'STDIN'}]")
 
     do_flash_image(args, args.tftp)
+
 
 def do_flash_image(args, tftp_root):
     """Flash image to the eMMC"""
@@ -97,13 +88,13 @@ def do_flash_image(args, tftp_root):
     # Send 'CR', and check for one of the possible options:
     # - uboot_prompt appears, if u-boot console is already active
     # - u-boot is just starting, so we will get "Hit any key.."
-    log.info('Waiting for u-boot prompt...')
+    print("[Waiting for u-boot prompt...]")
     conn_send(conn, "\r")
-    conn_wait_for_any(conn, [uboot_prompt, "Hit any key to stop autoboot:"], args.verbose)
+    conn_wait_for_any(conn, [uboot_prompt, "Hit any key to stop autoboot:"])
     # In case we got "Hit any key", let's stop the boot
     conn_send(conn, "\r")
-    conn_wait_for_any(conn, [uboot_prompt], args.verbose)
-    log.info('Connected to u-boot')
+    conn_wait_for_any(conn, [uboot_prompt])
+    print("\n[Connected to u-boot]")
 
     # Open input file or stdin
     if args.image and str(args.image) != "-":
@@ -121,14 +112,15 @@ def do_flash_image(args, tftp_root):
 
     if args.serverip:
         conn_send(conn, f"env set serverip {args.serverip}\r")
-        conn_wait_for_any(conn, [uboot_prompt], args.verbose)
+        conn_wait_for_any(conn, [uboot_prompt])
 
     if args.ipaddr:
         conn_send(conn, f"env set ipaddr {args.ipaddr}\r")
-        conn_wait_for_any(conn, [uboot_prompt], args.verbose)
+        conn_wait_for_any(conn, [uboot_prompt])
 
     conn_send(conn, f"env set loadaddr {args.loadaddr}\r")
-    conn_wait_for_any(conn, [uboot_prompt], args.verbose)
+    conn_wait_for_any(conn, [uboot_prompt])
+    print("")
 
     try:
         # do in loop:
@@ -136,6 +128,7 @@ def do_flash_image(args, tftp_root):
         # - save chunk to file in tftp root
         # - tell u-boot to 'tftp-and-emmc' chunk
         while True:
+            print("[Reading chunk]")
             data = f_img.read(chunk_size_in_bytes)
 
             if not data:
@@ -144,36 +137,27 @@ def do_flash_image(args, tftp_root):
             computed_crc = zlib.crc32(data) & 0xffffffff
 
             # create chunk
+            print("[Compressing chunk]")
             f_out = open(out_fullname, "wb")
             data_packed = gzip.compress(data, compresslevel=1)
             f_out.write(data_packed)
             f_out.close()
             conn_send(conn, f"tftp ${{loadaddr}} {chunk_filename}\r")
             # check that all bytes are transmitted
-            conn_wait_for_any(conn, [f"Bytes transferred = {len(data_packed)}"], args.verbose)
-            conn_wait_for_any(conn, [uboot_prompt], args.verbose)
+            conn_wait_for_any(conn, [f"Bytes transferred = {len(data_packed)}"])
+            conn_wait_for_any(conn, [uboot_prompt])
             # write to eMMC
             conn_send(conn, f"gzwrite mmc {args.mmcdev} ${{loadaddr}} ${{filesize}} 400000 {bytes_sent:X}\r")
-            conn_wait_for_any(conn, [f"{len(data)} bytes, crc 0x{computed_crc:08x}"], args.verbose)
-            print('  [CRC is OK]')
-            conn_wait_for_any(conn, [uboot_prompt], args.verbose)
+            conn_wait_for_any(conn, [f"{len(data)} bytes, crc 0x{computed_crc:08x}"])
+            print("  [CRC is OK]")
+            conn_wait_for_any(conn, [uboot_prompt])
 
             bytes_sent += len(data)
 
-            if args.verbose:
-                # in the verbose mode we need to print progress on the new line
-                # and move to the next line
-                print('')
-                end_of_string = '\n'
-            else:
-                # in the regular mode we print progress in one line
-                end_of_string = '\r'
-
             if image_size:
-                print(f"Progress: {bytes_sent:_}/{image_size:_} ({bytes_sent*100 // image_size}%)",
-                    end=end_of_string)
+                print(f"\n[Progress: {bytes_sent:_}/{image_size:_} ({bytes_sent*100 // image_size}%)]")
             else:
-                print(f"Progress: {bytes_sent:_}", end=end_of_string)
+                print(f"\n[Progress: {bytes_sent:_}]")
     finally:
         # remove chunk from tftp root
         os.remove(out_fullname)
@@ -182,13 +166,10 @@ def do_flash_image(args, tftp_root):
         f_img.close()
     conn.close()
 
-    if not args.verbose:
-        # move to the next line, below the progress
-        print('')
-    log.info("Image was flashed successfully.")
+    print("[Image was flashed successfully]")
 
 
-def conn_wait_for_any(conn, expect: List[str], verbose: bool):
+def conn_wait_for_any(conn, expect: List[str]):
     """ Wait for any of the expected response from u-boot"""
 
     rcv_str = ""
@@ -199,7 +180,7 @@ def conn_wait_for_any(conn, expect: List[str], verbose: bool):
         if not data:
             raise TimeoutError(f"Timeout waiting for `{expect}` from the device")
         rcv_char = chr(data[0])
-        if verbose and (rcv_char in printable or rcv_char == '\b'):
+        if (rcv_char in printable or rcv_char == '\b'):
             print(rcv_char, end='', flush=True)
         rcv_str += rcv_char
 
