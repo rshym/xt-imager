@@ -8,6 +8,7 @@ import argparse
 from typing import List
 from string import printable
 import gzip
+import zlib
 import serial
 
 logging.basicConfig(level=logging.INFO, format="[%(levelname)s] %(message)s")
@@ -140,6 +141,8 @@ def do_flash_image(args, tftp_root):
             if not data:
                 break
 
+            computed_crc = zlib.crc32(data) & 0xffffffff
+
             # create chunk
             f_out = open(out_fullname, "wb")
             data_packed = gzip.compress(data, compresslevel=1)
@@ -151,6 +154,8 @@ def do_flash_image(args, tftp_root):
             conn_wait_for_any(conn, [uboot_prompt], args.verbose)
             # write to eMMC
             conn_send(conn, f"gzwrite mmc {args.mmcdev} ${{loadaddr}} ${{filesize}} 400000 {bytes_sent:X}\r")
+            conn_wait_for_any(conn, [f"{len(data)} bytes, crc 0x{computed_crc:08x}"], args.verbose)
+            print('  [CRC is OK]')
             conn_wait_for_any(conn, [uboot_prompt], args.verbose)
 
             bytes_sent += len(data)
