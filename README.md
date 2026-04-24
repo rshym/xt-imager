@@ -9,6 +9,13 @@ Based on https://github.com/xen-troops/rcar_flash.
 [sudo] xt-imager.py [-h] [-s SERIAL] [-b BAUD] [-t TFTP] [--serverip SERVERIP] [--ipaddr IPADDR] [-v] image
 ```
 
+### Requirements
+The `pyserial` module is required for interacting with the U-Boot.
+On Ubuntu you may install it using
+```
+sudo apt install python3-serial
+```
+
 ### Command line options:
 
 ```
