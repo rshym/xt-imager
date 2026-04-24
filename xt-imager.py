@@ -84,12 +84,12 @@ def main():
 
     log.info("Use %s as a TFTP root.", args.tftp)
 
+    log.info("Reading data from " + (str(args.image) if args.image else "STDIN"))
+
     do_flash_image(args, args.tftp)
 
 def do_flash_image(args, tftp_root):
     """Flash image to the eMMC"""
-
-    log.info(args.image if args.image else "stdin")
 
     conn = serial.Serial(port=args.serial, baudrate=args.baud, timeout=20)
 
